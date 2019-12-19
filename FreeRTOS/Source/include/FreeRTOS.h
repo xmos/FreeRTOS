@@ -245,6 +245,15 @@ extern "C" {
 	#define portMEMORY_BARRIER()
 #endif
 
+#ifndef configNUM_CORES
+	#define configNUM_CORES 1
+#endif
+
+#ifndef configRUN_MULTIPLE_PRIORITIES
+	#define configRUN_MULTIPLE_PRIORITIES 0
+#endif
+
+
 /* The timers module relies on xTaskGetSchedulerState(). */
 #if configUSE_TIMERS == 1
 
@@ -259,6 +268,10 @@ extern "C" {
 	#ifndef configTIMER_TASK_STACK_DEPTH
 		#error If configUSE_TIMERS is set to 1 then configTIMER_TASK_STACK_DEPTH must also be defined.
 	#endif /* configTIMER_TASK_STACK_DEPTH */
+
+	#ifndef portTIMER_CALLBACK_ATTRIBUTE
+		#define portTIMER_CALLBACK_ATTRIBUTE
+	#endif /* portTIMER_CALLBACK_ATTRIBUTE */
 
 #endif /* configUSE_TIMERS */
 
@@ -726,10 +739,6 @@ extern "C" {
 	#define portPRIVILEGE_BIT ( ( UBaseType_t ) 0x00 )
 #endif
 
-#ifndef portYIELD_WITHIN_API
-	#define portYIELD_WITHIN_API portYIELD
-#endif
-
 #ifndef portSUPPRESS_TICKS_AND_SLEEP
 	#define portSUPPRESS_TICKS_AND_SLEEP( xExpectedIdleTime )
 #endif
@@ -1101,6 +1110,7 @@ typedef struct xSTATIC_TCB
 	StaticListItem_t	xDummy3[ 2 ];
 	UBaseType_t			uxDummy5;
 	void				*pxDummy6;
+	BaseType_t			xDummy23[ 2 ];
 	uint8_t				ucDummy7[ configMAX_TASK_NAME_LEN ];
 	#if ( ( portSTACK_GROWTH > 0 ) || ( configRECORD_STACK_HIGH_ADDRESS == 1 ) )
 		void			*pxDummy8;

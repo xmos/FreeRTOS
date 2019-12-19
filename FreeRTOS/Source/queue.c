@@ -86,7 +86,7 @@ zero. */
 	performed just because a higher priority task has been woken. */
 	#define queueYIELD_IF_USING_PREEMPTION()
 #else
-	#define queueYIELD_IF_USING_PREEMPTION() portYIELD_WITHIN_API()
+	#define queueYIELD_IF_USING_PREEMPTION() vTaskYieldWithinAPI()
 #endif
 
 /*
@@ -931,7 +931,7 @@ Queue_t * const pxQueue = xQueue;
 				is also a higher priority task in the pending ready list. */
 				if( xTaskResumeAll() == pdFALSE )
 				{
-					portYIELD_WITHIN_API();
+				    vTaskYieldWithinAPI();
 				}
 			}
 			else
@@ -1375,7 +1375,7 @@ Queue_t * const pxQueue = xQueue;
 				prvUnlockQueue( pxQueue );
 				if( xTaskResumeAll() == pdFALSE )
 				{
-					portYIELD_WITHIN_API();
+				    vTaskYieldWithinAPI();
 				}
 				else
 				{
@@ -1566,7 +1566,7 @@ Queue_t * const pxQueue = xQueue;
 				prvUnlockQueue( pxQueue );
 				if( xTaskResumeAll() == pdFALSE )
 				{
-					portYIELD_WITHIN_API();
+				    vTaskYieldWithinAPI();
 				}
 				else
 				{
@@ -1742,7 +1742,7 @@ Queue_t * const pxQueue = xQueue;
 				prvUnlockQueue( pxQueue );
 				if( xTaskResumeAll() == pdFALSE )
 				{
-					portYIELD_WITHIN_API();
+				    vTaskYieldWithinAPI();
 				}
 				else
 				{

@@ -1,0 +1,24 @@
+VERSION = 10.2.1
+
+DEPENDENT_MODULES = FreeRTOS(>=10.2.1) \
+                    lib_soc(>=0.5.0)
+
+MODULE_XCC_FLAGS = $(XCC_FLAGS) -Os
+
+TCP_ROOT = Source/FreeRTOS-Plus-TCP
+CLI_ROOT = Source/FreeRTOS-Plus-CLI
+
+EXPORT_INCLUDE_DIRS = $(TCP_ROOT)/include                            \
+                      $(TCP_ROOT)/portable/NetworkInterface/include  \
+                      $(TCP_ROOT)/portable/Compiler/XCC              \
+                      #$(CLI_ROOT)
+                      
+INCLUDE_DIRS = $(EXPORT_INCLUDE_DIRS)
+
+SOURCE_DIRS = $(TCP_ROOT)                                         \
+              $(TCP_ROOT)/portable/BufferManagement               \
+              $(TCP_ROOT)/portable/NetworkInterface/XCC/XCORE200  \
+              #$(CLI_ROOT)
+
+EXCLUDE_FILES += $(TCP_ROOT)/portable/BufferManagement/BufferAllocation_1.c
+

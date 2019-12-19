@@ -1,0 +1,18 @@
+FreeRTOS demo for the XCORE200
+
+To get started:
+ - Ensure lib_rtos_support and all its dependencies have been cloned at the
+   same level as this FreeRTOS repository. One way to do this is to clone the
+   lib_rtos_support library with all of its submodule dependencies:
+   git clone --recurse-submodules git@github.com:xmos/lib_rtos_support.git
+   This FreeRTOS repository will be included as a submodule.
+
+ - Create an xTIMEComposer workspace at the top level of the lib_rtos_support
+   repository.
+
+ - Import the project named `RTOSDemo' found in the FreeRTOS repository at
+   /FreeRTOS/Demo/XCORE200_XCC.
+
+ - Use xwaf to build. The xTIMEComposer project has been configured to use xwaf
+   so it may also be built from within xTIMEComposer if desired.
+

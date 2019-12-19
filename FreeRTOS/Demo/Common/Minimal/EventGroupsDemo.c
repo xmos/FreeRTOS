@@ -303,7 +303,9 @@ EventBits_t uxSynchronisationBit, uxReturned;
 		/* No block time was specified, so as per the comments above, the
 		rendezvous is not expected to have completed yet. */
 		configASSERT( ( uxReturned & ebALL_SYNC_BITS ) != ebALL_SYNC_BITS );
-
+#if !defined(configNUM_CORES) || configNUM_CORES == 1
+		/* This check seems to be invalid, at least in SMP.
+		The rendezvous can complete before 1 tick is up which is not a problem. */
 		uxReturned = xEventGroupSync( xEventGroup,	/* The event group used for the synchronisation. */
 									  uxSynchronisationBit, /* The bit to set in the event group to indicate this task is at the sync point. */
 									  ebALL_SYNC_BITS, /* The bits to wait for - these bits are set by the other tasks taking part in the sync. */
@@ -312,6 +314,7 @@ EventBits_t uxSynchronisationBit, uxReturned;
 		/* A short block time was specified, so as per the comments above, the
 		rendezvous is not expected to have completed yet. */
 		configASSERT( ( uxReturned & ebALL_SYNC_BITS ) != ebALL_SYNC_BITS );
+#endif
 
 		uxReturned = xEventGroupSync( xEventGroup,	/* The event group used for the synchronisation. */
 									uxSynchronisationBit, /* The bit to set in the event group to indicate this task is at the sync point. */
