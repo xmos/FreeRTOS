@@ -18,7 +18,7 @@
 					<folderInfo id="com.xmos.cdt.toolchain.1851913321.98147733" name="/" resourcePath="">
 						<toolChain id="com.xmos.cdt.toolchain.1014600666" name="com.xmos.cdt.toolchain" superClass="com.xmos.cdt.toolchain">
 							<targetPlatform archList="all" binaryParser="com.xmos.cdt.core.XEBinaryParser;org.eclipse.cdt.core.GNU_ELF" id="com.xmos.cdt.core.platform.861735340" isAbstract="false" osList="linux,win32,macosx" superClass="com.xmos.cdt.core.platform"/>
-							<builder arguments="--config=${ConfigName}" cleanBuildTarget="distclean" command="xwaf" id="com.xmos.cdt.builder.base.1319132242" incrementalBuildTarget="configure build" keepEnvironmentInBuildfile="false" managedBuildOn="false" superClass="com.xmos.cdt.builder.base">
+							<builder autoBuildTarget="" cleanBuildTarget="clean" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="com.xmos.cdt.builder.base.1319132242" incrementalBuildTarget="" keepEnvironmentInBuildfile="false" managedBuildOn="true" superClass="com.xmos.cdt.builder.base">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="bin"/>
 								</outputEntries>
@@ -191,6 +191,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/portable/XCC/XCORE200}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/Common/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/api}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.xc.compiler.input.103736557" name="XC" superClass="com.xmos.cdt.xc.compiler.input"/>
 							</tool>
@@ -508,6 +510,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/portable/XCC/XCORE200}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/Common/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/api}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.c.compiler.input.c.1395604287" name="C" superClass="com.xmos.cdt.c.compiler.input.c"/>
 							</tool>
@@ -830,6 +834,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/freertos/portable/XCC/XCORE200}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RTOSDemo/Common/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/lib_rtos_support/api}&quot;"/>
 								</option>
 								<inputType id="com.xmos.cdt.cxx.compiler.input.cpp.2034468813" name="C++" superClass="com.xmos.cdt.cxx.compiler.input.cpp"/>
 							</tool>

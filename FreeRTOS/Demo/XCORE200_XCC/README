@@ -1,18 +1,29 @@
-FreeRTOS demo for the XCORE200
+Prerequisites:
 
-To get started:
- - Ensure lib_rtos_support and all its dependencies have been cloned at the
-   same level as this FreeRTOS repository. One way to do this is to clone the
-   lib_rtos_support library with all of its submodule dependencies:
-   git clone --recurse-submodules git@github.com:xmos/lib_rtos_support.git
-   This FreeRTOS repository will be included as a submodule.
+  - XMOS xTIMEcomposer 14.4.1 is required to build the demo. Earlier versions
+    may work but have not been tested.
 
- - Create an xTIMEComposer workspace at the top level of the lib_rtos_support
-   repository.
+  - The demo runs on the xCORE microphone array evaluation board which can be
+    purchased here:
+https://www.digikey.com/product-detail/en/xmos/XK-USB-MIC-UF216/880-1120-ND/6005986?WT.srch=1&gclid=CjwKCAiA__HvBRACEiwAbViuU9mCl1oBzpSyQyRvIgnW1eKtlawvm7HzzSbotDbksJR3hiyt6KUUaBoCiTQQAvD_BwE
 
- - Import the project named `RTOSDemo' found in the FreeRTOS repository at
-   /FreeRTOS/Demo/XCORE200_XCC.
+  - Plug the xTAG programmer into the evaluation board. Ensure both the xTAG
+    and evaluation board are connected to the computer via USB.
 
- - Use xwaf to build. The xTIMEComposer project has been configured to use xwaf
-   so it may also be built from within xTIMEComposer if desired.
+To build and run the demo:
+
+With the xTIMEcomposer IDE:
+
+  - Create a workspace in this directory (FreeRTOS/Demo/XCORE200_XCC)
+  - Import the 5 projects (RTOSDemo, lib_rtos_support, lib_trycatch,
+    lib_xassert, lib_xcore_c).
+  - Build the RTOSDemo project.
+  - Create a run configuration for the resulting RTOSDemo/bin/RTOSDemo.xe
+    binary. Make sure xSCOPE Target I/O option is selected.
+
+From the command line:
+
+  - cd into the RTOSDemo directory
+  - Build the demo by running `xmake'
+  - Run the demo with `xrun --xscope bin/RTOSDemo.xe'
 

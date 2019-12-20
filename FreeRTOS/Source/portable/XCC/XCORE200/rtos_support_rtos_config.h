@@ -1,10 +1,4 @@
-/*
- * rtos_support_rtos_config.h
- *
- *  Created on: Nov 19, 2019
- *      Author: mbruno
- */
-
+// Copyright (c) 2019, XMOS Ltd, All rights reserved
 
 #ifndef RTOS_SUPPORT_RTOS_CONFIG_H_
 #define RTOS_SUPPORT_RTOS_CONFIG_H_
