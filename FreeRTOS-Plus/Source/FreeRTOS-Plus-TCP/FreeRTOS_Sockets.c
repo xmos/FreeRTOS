@@ -1271,6 +1271,11 @@ NetworkBufferDescriptor_t *pxNetworkBuffer;
 
 /*-----------------------------------------------------------*/
 
+#if defined(__xcore__) && __xcore__
+/* 78 was maximum stack usage without recursive call.
+ * The maximum recursion is 1 additional call */
+#pragma stackfunction 156
+#endif
 BaseType_t FreeRTOS_setsockopt( Socket_t xSocket, int32_t lLevel, int32_t lOptionName, const void *pvOptionValue, size_t xOptionLength )
 {
 /* The standard Berkeley function returns 0 for success. */
