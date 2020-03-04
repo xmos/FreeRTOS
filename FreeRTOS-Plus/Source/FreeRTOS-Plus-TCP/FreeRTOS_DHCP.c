@@ -1,5 +1,5 @@
 /*
- * FreeRTOS+TCP V2.0.11
+ * FreeRTOS+TCP V2.2.0
  * Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -107,11 +107,6 @@ are located. */
 /* Offset into a DHCP message at which the first byte of the options is
 located. */
 #define dhcpFIRST_OPTION_BYTE_OFFSET			( 0xf0 )
-
-/* When walking the variable length options field, the following value is used
-to ensure the walk has not gone past the end of the valid options.  2 bytes is
-made up of the length byte, and minimum one byte value. */
-#define dhcpMAX_OPTION_LENGTH_OF_INTEREST		( 2L )
 
 /* Standard DHCP port numbers and magic cookie value. */
 #if( ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN )
@@ -359,9 +354,7 @@ BaseType_t xGivingUp = pdFALSE;
 
 				if( xDHCPData.xDHCPTxPeriod <= ipconfigMAXIMUM_DISCOVER_TX_PERIOD )
 				{
-					xDHCPData.ulTransactionId = ipconfigRAND32( );
-
-					if( 0 != xDHCPData.ulTransactionId )
+					if( xApplicationGetRandomNumber( &( xDHCPData.ulTransactionId ) ) != pdFALSE )
 					{
 						xDHCPData.xDHCPTxTime = xTaskGetTickCount( );
 						xDHCPData.xUseBroadcast = !xDHCPData.xUseBroadcast;
@@ -594,10 +587,9 @@ static void prvInitialiseDHCP( void )
 	/* Initialise the parameters that will be set by the DHCP process. Per
 	https://www.ietf.org/rfc/rfc2131.txt, Transaction ID should be a random
 	value chosen by the client. */
-	xDHCPData.ulTransactionId = ipconfigRAND32();
 
 	/* Check for random number generator API failure. */
-	if( 0 != xDHCPData.ulTransactionId )
+	if( xApplicationGetRandomNumber( &( xDHCPData.ulTransactionId ) ) != pdFALSE )
 	{
 		xDHCPData.xUseBroadcast = 0;
 		xDHCPData.ulOfferedIPAddress = 0UL;
@@ -608,6 +600,10 @@ static void prvInitialiseDHCP( void )
 		prvCreateDHCPSocket();
 		FreeRTOS_debug_printf( ( "prvInitialiseDHCP: start after %lu ticks\n", dhcpINITIAL_TIMER_PERIOD ) );
 		vIPReloadDHCPTimer( dhcpINITIAL_TIMER_PERIOD );
+	}
+	else
+	{
+		/* There was a problem with the randomiser. */
 	}
 }
 /*-----------------------------------------------------------*/
@@ -647,9 +643,11 @@ const uint32_t ulMandatoryOptions = 2ul; /* DHCP server address, and the correct
 				/* Walk through the options until the dhcpOPTION_END_BYTE byte
 				is found, taking care not to walk off the end of the options. */
 				pucByte = &( pxDHCPMessage->ucFirstOptionByte );
-				pucLastByte = &( pucUDPPayload[ lBytes - dhcpMAX_OPTION_LENGTH_OF_INTEREST ] );
+                /* Maintain a pointer to the last valid byte (i.e. not the first
+                invalid byte). */
+				pucLastByte = pucUDPPayload + lBytes - 1;
 
-				while( pucByte < pucLastByte )
+				while( pucByte <= pucLastByte )
 				{
 					ucOptionCode = pucByte[ 0 ];
 					if( ucOptionCode == dhcpOPTION_END_BYTE )
@@ -666,12 +664,13 @@ const uint32_t ulMandatoryOptions = 2ul; /* DHCP server address, and the correct
 					}
 
 					/* Stop if the response is malformed. */
-					if( pucByte < pucLastByte - 1 )
+					if( pucByte < pucLastByte )
 					{
+                        /* There are at least two bytes left. */
 						ucLength = pucByte[ 1 ];
 						pucByte += 2;
 
-						if( pucByte >= pucLastByte - ucLength )
+						if( pucByte + ucLength > pucLastByte )
 						{
 							break;
 						}
@@ -926,7 +925,8 @@ size_t xOptionsLength = sizeof( ucDHCPRequestOptions );
 	FreeRTOS_debug_printf( ( "vDHCPProcess: reply %lxip\n", FreeRTOS_ntohl( xDHCPData.ulOfferedIPAddress ) ) );
 	iptraceSENDING_DHCP_REQUEST();
 
-	if( FreeRTOS_sendto( xDHCPData.xDHCPSocket, pucUDPPayloadBuffer, ( sizeof( DHCPMessage_t ) + xOptionsLength ), FREERTOS_ZERO_COPY, &xAddress, sizeof( xAddress ) ) == 0 )
+	/* 'ucFirstOptionByte' is part of DHCP message struct, so subtract one byte. */
+	if( FreeRTOS_sendto( xDHCPData.xDHCPSocket, pucUDPPayloadBuffer, ( sizeof( DHCPMessage_t ) + xOptionsLength - 1 ), FREERTOS_ZERO_COPY, &xAddress, sizeof( xAddress ) ) == 0 )
 	{
 		/* The packet was not successfully queued for sending and must be
 		returned to the stack. */
@@ -954,7 +954,8 @@ size_t xOptionsLength = sizeof( ucDHCPDiscoverOptions );
 	FreeRTOS_debug_printf( ( "vDHCPProcess: discover\n" ) );
 	iptraceSENDING_DHCP_DISCOVER();
 
-	if( FreeRTOS_sendto( xDHCPData.xDHCPSocket, pucUDPPayloadBuffer, ( sizeof( DHCPMessage_t ) + xOptionsLength ), FREERTOS_ZERO_COPY, &xAddress, sizeof( xAddress ) ) == 0 )
+	/* 'ucFirstOptionByte' is part of DHCP message struct, so subtract one byte. */
+	if( FreeRTOS_sendto( xDHCPData.xDHCPSocket, pucUDPPayloadBuffer, ( sizeof( DHCPMessage_t ) + xOptionsLength - 1 ), FREERTOS_ZERO_COPY, &xAddress, sizeof( xAddress ) ) == 0 )
 	{
 		/* The packet was not successfully queued for sending and must be
 		returned to the stack. */
@@ -968,13 +969,16 @@ size_t xOptionsLength = sizeof( ucDHCPDiscoverOptions );
 	static void prvPrepareLinkLayerIPLookUp( void )
 	{
 	uint8_t ucLinkLayerIPAddress[ 2 ];
+	uint32_t ulNumbers[ 2 ];
 
 		/* After DHCP has failed to answer, prepare everything to start
 		trying-out LinkLayer IP-addresses, using the random method. */
 		xDHCPData.xDHCPTxTime = xTaskGetTickCount();
 
-		ucLinkLayerIPAddress[ 0 ] = ( uint8_t )1 + ( uint8_t )( ipconfigRAND32() % 0xFDu );		/* get value 1..254 for IP-address 3rd byte of IP address to try. */
-		ucLinkLayerIPAddress[ 1 ] = ( uint8_t )1 + ( uint8_t )( ipconfigRAND32() % 0xFDu );		/* get value 1..254 for IP-address 4th byte of IP address to try. */
+		xApplicationGetRandomNumber( &( ulNumbers[ 0 ] ) );
+		xApplicationGetRandomNumber( &( ulNumbers[ 1 ] ) );
+		ucLinkLayerIPAddress[ 0 ] = ( uint8_t )1 + ( uint8_t )( ulNumbers[ 0 ] % 0xFDu );		/* get value 1..254 for IP-address 3rd byte of IP address to try. */
+		ucLinkLayerIPAddress[ 1 ] = ( uint8_t )1 + ( uint8_t )( ulNumbers[ 1 ] % 0xFDu );		/* get value 1..254 for IP-address 4th byte of IP address to try. */
 
 		xNetworkAddressing.ulGatewayAddress = FreeRTOS_htonl( 0xA9FE0203 );
 
@@ -995,9 +999,15 @@ size_t xOptionsLength = sizeof( ucDHCPDiscoverOptions );
 		xNetworkAddressing.ulBroadcastAddress = ( xDHCPData.ulOfferedIPAddress & xNetworkAddressing.ulNetMask ) |  ~xNetworkAddressing.ulNetMask;
 
 		/* Close socket to ensure packets don't queue on it. not needed anymore as DHCP failed. but still need timer for ARP testing. */
-		vSocketClose( xDHCPData.xDHCPSocket );
-		xDHCPData.xDHCPSocket = NULL;
-		xDHCPData.xDHCPTxPeriod = pdMS_TO_TICKS( 3000ul + ( ipconfigRAND32() & 0x3fful ) ); /*  do ARP test every (3 + 0-1024mS) seconds. */
+		if( xDHCPData.xDHCPSocket != NULL )
+		{
+			/* Close socket to ensure packets don't queue on it. */
+			vSocketClose( xDHCPData.xDHCPSocket );
+		    xDHCPData.xDHCPSocket = NULL;
+		}
+
+		xApplicationGetRandomNumber( &( ulNumbers[ 0 ] ) );
+		xDHCPData.xDHCPTxPeriod = pdMS_TO_TICKS( 3000ul + ( ulNumbers[ 0 ] & 0x3ffuL ) ); /*  do ARP test every (3 + 0-1024mS) seconds. */
 
 		xARPHadIPClash = pdFALSE;	   /* reset flag that shows if have ARP clash. */
 		vARPSendGratuitous();
