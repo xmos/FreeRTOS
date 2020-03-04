@@ -45,6 +45,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "FreeRTOS_TCP_port.h"
 
+#if ipconfigUSE_ETHERNET
+
 #if ipconfigZERO_COPY_RX_DRIVER == 0 || ipconfigZERO_COPY_TX_DRIVER == 0
 #error The xcore TCP/IP driver requires both RX and TX zero copy
 #endif
@@ -153,7 +155,7 @@ void xEth_ISR(soc_peripheral_t device)
 
         rx_ring_buf = soc_peripheral_rx_dma_ring_buf(device);
 
-        while( ( frame_buffer = soc_dma_ring_rx_buf_get(rx_ring_buf, &frame_length) ) != NULL )
+        while( ( frame_buffer = soc_dma_ring_rx_buf_get(rx_ring_buf, &frame_length, NULL) ) != NULL )
         {
             BaseType_t xResult;
             xResult = xTimerPendFunctionCallFromISR(
@@ -352,3 +354,4 @@ BaseType_t xReturn;
     return xReturn;
 }
 
+#endif /* ipconfigUSE_ETHERNET */

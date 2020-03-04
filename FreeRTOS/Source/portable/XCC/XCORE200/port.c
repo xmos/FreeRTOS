@@ -199,9 +199,11 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 	 * Saved PC will point to the new thread's
 	 * entry pointer.
 	 * Interrupts will default to enabled.
+	 * KEDI is also set to enable dual issue mode
+	 * upon kernel entry.
 	 */
 	pxTopOfStack[ 1 ] = ( StackType_t ) pxCode;       /* SP[1]  := SPC */
-	pxTopOfStack[ 2 ] = XS1_SR_IEBLE_MASK;            /* SP[2]  := SSR */
+	pxTopOfStack[ 2 ] = (1<<9) | XS1_SR_IEBLE_MASK;   /* SP[2]  := SSR */
 	pxTopOfStack[ 3 ] = 0x00000000;                   /* SP[3]  := SED */
 	pxTopOfStack[ 4 ] = 0x00000000;                   /* SP[4]  := ET */
 	pxTopOfStack[ 5 ] = dp;                           /* SP[5]  := DP */

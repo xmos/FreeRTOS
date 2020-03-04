@@ -3,7 +3,7 @@
     .text
     .issue_mode  single
     .globl  prvRegisterCheck_asm2
-    .align 2
+    .align 4
     .type   prvRegisterCheck_asm2,@function
     .cc_top prvRegisterCheck_asm2.function,prvRegisterCheck_asm2
 
@@ -13,7 +13,7 @@
 void prvRegisterCheck_asm2( void );
 */
 prvRegisterCheck_asm2:
-    entsp NSTACKWORDS
+    ENTSP_lu6 NSTACKWORDS
 
     stw r4, sp[1]
     stw r5, sp[2]

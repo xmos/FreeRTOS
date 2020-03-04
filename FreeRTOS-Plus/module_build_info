@@ -1,6 +1,6 @@
-VERSION = 10.2.1
+VERSION = 10.3.0
 
-DEPENDENT_MODULES = FreeRTOS(>=10.2.1) \
+DEPENDENT_MODULES = FreeRTOS(>=10.3.0) \
                     lib_soc(>=0.5.0)
 
 MODULE_XCC_FLAGS = $(XCC_FLAGS) -Os
@@ -21,4 +21,4 @@ SOURCE_DIRS = $(TCP_ROOT)                                         \
               #$(CLI_ROOT)
 
 EXCLUDE_FILES += $(TCP_ROOT)/portable/BufferManagement/BufferAllocation_1.c
-
+EXCLUDE_FILES += $(TCP_ROOT)/portable/BufferManagement/BufferAllocation_2.c

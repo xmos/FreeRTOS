@@ -3,14 +3,14 @@
 #ifndef FREERTOS_TCP_PORT_H_
 #define FREERTOS_TCP_PORT_H_
 
+#if ipconfigUSE_ETHERNET
+
 #include "soc.h"
 #include "bitstream_devices.h"
 #include "ethernet_driver.h"
 
 #define TCPPORT_ETH_DEV                         (bitstream_ethernet_devices[BITSTREAM_ETHERNET_DEVICE_A])
 #define TCPPORT_DEV_PHYS_ADDR                   (0)
-
-#define TCPPORT_INITIAL_RANDOM_SEED             (0xF94B291A)
 
 #define TCPPORT_ETH_DMA_RX_DESCRIPTOR_COUNT     (12)
 #define TCPPORT_ETH_DMA_TX_DESCRIPTOR_COUNT     (12)
@@ -23,6 +23,17 @@
  * is sent.
  */
 #define TCPPORT_FREE_TX_FRAMES_ASAP             (1)
+
+#endif
+
+#if ipconfigUSE_WIFI
+
+#include "sl_wfx.h"
+#include "sl_wfx_host.h"
+
+#endif
+
+#define TCPPORT_INITIAL_RANDOM_SEED             (0xF94B291A)
 
 BaseType_t xInit_RNG( void );
 

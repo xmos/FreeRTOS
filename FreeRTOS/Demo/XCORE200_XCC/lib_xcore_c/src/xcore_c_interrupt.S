@@ -9,6 +9,7 @@
 .globl _xcore_c_interrupt_permitted_common
 .align 2  // We arrive in single issue mode.
 .type  _xcore_c_interrupt_permitted_common,@function
+.issue_mode single
 .cc_top _xcore_c_interrupt_permitted_common.function,_xcore_c_interrupt_permitted_common
 _xcore_c_interrupt_permitted_common:
   // This is the body of the _xcore_c_interrupt_permitted_XXX functions.
@@ -69,6 +70,7 @@ _xcore_c_interrupt_permitted_common:
 .globl _xcore_c_interrupt_callback_common
 .align 2  // We arrive in single issue mode.
 .type  _xcore_c_interrupt_callback_common,@function
+.issue_mode single
 .cc_top _xcore_c_interrupt_callback_common.function,_xcore_c_interrupt_callback_common
 _xcore_c_interrupt_callback_common:
   // This is the body of the _xcore_c_interrupt_callback_XXX functions.
