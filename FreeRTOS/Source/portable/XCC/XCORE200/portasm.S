@@ -5,6 +5,7 @@
 .globl kexcept
 .align 128              /* align the kernel section to 128 bytes */
 .type  kexcept,@function
+.issue_mode dual
 .cc_top kexcept.function, kexcept
 kexcept:
   ldc r11, 0x0004
@@ -24,17 +25,17 @@ kcall:
   /* so we need to adjust the SPC value that we save to the stack: */
   stw    spc,    sp[1]   /* save the saved program counter onto the stack... */
   ldw    r10,    sp[1]   /* so that we can load it into r10 (which we have already saved). */
-  add    r10, r10, 2     /* Add 2 to the spc to make it point to the instruction after the kcall */
-  stw    r10,    sp[1]   /* Now save it to the stack */
+  add    r10, r10, 4     /* Add 4 to the spc to make it point to the instruction after the kcall */
+ {stw    r10,    sp[1]   /* Now save it to the stack */
 
   /* KCALLs use the same common function as interrupt callbacks. */
-  /* we want it to call freertos_kcall_handler as the root function. */
-  ldap   r11,    pxKernelCallHandler
-  mov    r10,     r11
+  /* we want it to call pxKernelCallHandler as the root function. */
+  ldap   r11,    pxKernelCallHandler}
+ {mov    r10,     r11
 
   /* jump into _freertos_interrupt_callback_common but just past */
   /* the instruction that saves the SPC since it was saved above */
-  bu _freertos_kcall_save_ctx_continue
+  bu _freertos_kcall_save_ctx_continue}
 
 .globl rtos_interrupt_callback_common
 rtos_interrupt_callback_common:
@@ -60,26 +61,26 @@ _freertos_kcall_save_ctx_continue:
   stw    r6,     sp[14]
   stw    r7,     sp[15]
   stw    r8,     sp[16]
-  stw    r9,     sp[17]
-//stw    r10,    sp[18]  /* already saved by the wrapper function. */
-//stw    r11,    sp[19]  /* already saved by the wrapper function. */
+ {stw    r9,     sp[17]
+/*stw    r10,    sp[18]     already saved by the wrapper function. */
+/*stw    r11,    sp[19]     already saved by the wrapper function. */
 
-  ldaw   r1,     sp[0]   /* Get value of current stackpointer... */
+  ldaw   r1,     sp[0]}  /* Get value of current stackpointer... */
   ldw    r0,     dp[pxCurrentTCB]
   stw    r1,     r0[0x0] /* and save it to the first word (top of stack) in the current TCB */
 
-  kentsp 0               /* switch to the kernel stack. */
+ {kentsp 0               /* switch to the kernel stack. */
                          /* The value 0 is safe to use since we don't need the SP */
                          /* saved to KSP[0] as it will be saved by the callback. */
 
-  get    r11,    ed      /* Get the event data... */
-  mov    r0,     r11     /* into the first argument for the callback function... */
-  bla    r10             /* and call the callback function. */
+  get    r11,    ed}     /* Get the event data... */
+ {mov    r0,     r11     /* into the first argument for the callback function... */
+  bla    r10}            /* and call the callback function. */
 
   ldap   r11,    vPortSwitchContext
   bla    r11
 
-//krestsp 0              /* actually uncessary since KSP is already set and the SP */
+//krestsp 0              /* actually unnecessary since KSP is already set and the SP */
                          /* is being restored next from the current TCB. */
 
 .globl _freertos_restore_ctx
@@ -108,10 +109,10 @@ _freertos_restore_ctx:
   ldw    r8,     sp[16]
   ldw    r9,     sp[17]
   ldw    r10,    sp[18]
-  ldw    r11,    sp[19]
+ {ldw    r11,    sp[19]
 
   /* shrink the stack by the size of the context just restored */
-  ldaw   sp,     sp[RTOS_SUPPORT_INTERRUPT_STACK_GROWTH]
+  ldaw   sp,     sp[RTOS_SUPPORT_INTERRUPT_STACK_GROWTH]}
 
   kret                   /* exit kernel mode and return to the thread */
 

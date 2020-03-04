@@ -5,6 +5,13 @@
 
 #ifndef __ASSEMBLER__
 
+/* Inclusion of xc1.h will result in clock being defined as a type.
+ * By default, FreeRTOS will require standard time.h, where clock is a function.
+ */
+#ifndef USE_XCORE_CLOCK_TYPE
+#define _clock_defined
+#endif
+
 #include <xs1.h>
 #include "xcore_c.h"
 #include "rtos_support.h"
@@ -60,7 +67,7 @@ typedef uint32_t UBaseType_t;
 /*-----------------------------------------------------------*/
 
 /* Scheduler utilities. */
-#define portYIELD() 	asm volatile( "kcall 0" ::: "memory" )
+#define portYIELD() 	asm volatile( "KCALLI_lu6 0" ::: "memory" )
 
 #define portEND_SWITCHING_ISR( xSwitchRequired ) \
 do \

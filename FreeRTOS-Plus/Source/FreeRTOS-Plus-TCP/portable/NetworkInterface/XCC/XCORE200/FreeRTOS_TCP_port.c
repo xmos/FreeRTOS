@@ -1,9 +1,4 @@
-/*
- * FreeRTOS_TCP_port.c
- *
- *  Created on: Oct 15, 2019
- *      Author: jmccarthy
- */
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
@@ -48,6 +43,19 @@ UBaseType_t uxRetVal;
     return uxRetVal;
 }
 
+#if !(__iot_secure_sockets_h_exists__)
+BaseType_t xApplicationGetRandomNumber( uint32_t *pulNumber )
+{
+BaseType_t xRetVal;
+UBaseType_t uxVal;
+
+    xRetVal = xInit_RNG();
+    uxVal = uxRand();
+    *(pulNumber) = uxVal;
+
+    return xRetVal;
+}
+
 /* Generate ISN per RFC 6528
  * ISN = M + F(localip, localport, remoteip, remoteport, secretkey)
  *       where M is a 4 us timer, F is a pseudorandom function */
@@ -74,4 +82,5 @@ uint32_t ulApplicationGetNextSequenceNumber( uint32_t ulSourceAddress,
     // hash finish
     return ulISN;
 }
+#endif
 
