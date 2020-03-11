@@ -1,4 +1,4 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2020, XMOS Ltd, All rights reserved
 
 #ifndef RTOS_SUPPORT_RTOS_CONFIG_H_
 #define RTOS_SUPPORT_RTOS_CONFIG_H_
@@ -20,10 +20,10 @@
 #define RTOS_SUPPORT_INTERRUPT_STACK_GROWTH ( 19 + 1 )
 
 /**
- * The word offset into the stack where R10 is to be stored after it
+ * The word offset into the stack where R1 is to be stored after it
  * is extended when saving a thread's context.
  */
-#define RTOS_SUPPORT_INTERRUPT_R10_STACK_OFFSET 18
+#define RTOS_SUPPORT_INTERRUPT_R1_STACK_OFFSET 9
 
 /**
  * The word offset into the stack where R11 is to be stored after it

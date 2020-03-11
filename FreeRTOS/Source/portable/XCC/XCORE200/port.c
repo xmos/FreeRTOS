@@ -11,17 +11,6 @@ uint32_t ulPortYieldRequired[ portMAX_CORE_COUNT ] = { pdFALSE };
 
 /*-----------------------------------------------------------*/
 
-__attribute__((fptrgroup("rtos_isr")))
-void pxKernelCallHandler( uint32_t ulData )
-{
-	int xCoreID;
-
-//	debug_printf( "In KCALL: %u\n", ulData );
-	xCoreID = rtos_core_id_get();
-	ulPortYieldRequired[ xCoreID ] = pdTRUE;
-}
-/*-----------------------------------------------------------*/
-
 void vIntercoreInterruptISR( void )
 {
 	int xCoreID;
@@ -29,17 +18,6 @@ void vIntercoreInterruptISR( void )
 //	debug_printf( "In KCALL: %u\n", ulData );
 	xCoreID = rtos_core_id_get();
 	ulPortYieldRequired[ xCoreID ] = pdTRUE;
-}
-/*-----------------------------------------------------------*/
-
-void vPortSwitchContext( void )
-{
-	int xCoreID = rtos_core_id_get();
-	if( ulPortYieldRequired[ xCoreID ] == pdTRUE )
-	{
-		ulPortYieldRequired[ xCoreID ] = pdFALSE;
-        vTaskSwitchContext( xCoreID );
-	}
 }
 /*-----------------------------------------------------------*/
 
@@ -64,17 +42,16 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR, pvData )
 
 	configASSERT( xCoreID == rtos_core_id_get() );
 
-	/* must call hwtimer_get_time to clear the interrupt */
-	hwtimer_get_time( xKernelTimer, &ulNow );
-	/* but we want the next interrupt to be scheduled
-	 * relative to the previous interrupt time, not the
-	 * current time which is some random amount of time
-	 * later. */
+	/* Need the next interrupt to be scheduled relative to
+	 * the current trigger time, rather than the current
+	 * time. */
 	hwtimer_get_trigger_time( xKernelTimer, &ulNow );
 	ulNow += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
 	hwtimer_change_trigger_time( xKernelTimer, ulNow );
 
-	//	debug_printf("KISR from %d\n", xCoreID);
+#if configUPDATE_RTOS_TIME_FROM_TICK_ISR == 1
+	rtos_time_increment( RTOS_TICK_PERIOD( configTICK_RATE_HZ ) );
+#endif
 
 	if( xTaskIncrementTick() != pdFALSE )
 	{
@@ -139,7 +116,7 @@ static int prvCoreInit( void )
 }
 /*-----------------------------------------------------------*/
 
-DEFINE_RTOS_INTERRUPT_PERMITTED( void, vPortStartSchedulerOnCore, void )
+DEFINE_RTOS_KERNEL_ENTRY( void, vPortStartSchedulerOnCore, void )
 {
 	int xCoreID;
 
@@ -152,12 +129,12 @@ DEFINE_RTOS_INTERRUPT_PERMITTED( void, vPortStartSchedulerOnCore, void )
 	 * to run and jump into it.
 	 */
 	asm volatile (
-			"mov r5, %0\n\t" /* R5 must be the FreeRTOS core ID*/
-			"ldaw r4, dp[pxCurrentTCBs]\n\t" /* R4 must be the TCB list which is indexed by R5 */
+			"mov r6, %0\n\t" /* R6 must be the FreeRTOS core ID*/
+			"ldaw r5, dp[pxCurrentTCBs]\n\t" /* R5 must be the TCB list which is indexed by R6 */
 			"bu _freertos_restore_ctx\n\t"
 			: /* no outputs */
 			: "r"(xCoreID)
-			: "r4", "r5"
+			: "r5", "r6"
 	);
 }
 /*-----------------------------------------------------------*/

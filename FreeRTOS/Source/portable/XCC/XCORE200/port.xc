@@ -14,13 +14,13 @@ extern "C" {
 #define configNUM_CORES 1
 #endif
 
-DECLARE_RTOS_INTERRUPT_PERMITTED(void, vPortStartSchedulerOnCore, void);
+DECLARE_RTOS_KERNEL_ENTRY(void, vPortStartSchedulerOnCore, void);
 
 } /* extern "C" */
 
 void vPortStartSMPScheduler( void )
 {
     par (int i = 0; i < configNUM_CORES; i++) {
-        RTOS_INTERRUPT_PERMITTED(vPortStartSchedulerOnCore)();
+        RTOS_KERNEL_ENTRY(vPortStartSchedulerOnCore)();
     }
 }

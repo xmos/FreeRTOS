@@ -1,6 +1,12 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2020, XMOS Ltd, All rights reserved
 
 #include "rtos_support_rtos_config.h"
+
+/* The FreeRTOS interrupt code calls vTaskSwitchContext.
+Therfore it must be added to the rtos_isr group with the
+rest of the ISR callback functions. */
+.weak _fptrgroup.rtos_isr.nstackwords.group
+.add_to_set _fptrgroup.rtos_isr.nstackwords.group, vTaskSwitchContext.nstackwords, vTaskSwitchContext
 
 .globl kexcept
 .align 128              /* align the kernel section to 128 bytes */
@@ -14,85 +20,112 @@ kexcept:
   or  r11, r11, r9
   bau r11 //_TrapHandler is at 0x00040080. TODO: Is it always? Why can't I access the symbol _TrapHandler?
 
+_yield:
+ {set    sp,     r4                  /* Restore the task's SP to save the rest of its context. */
+  get    r11,    id}                 /* Get the logical core ID into r11. */
+  ldaw   r0,     dp[rtos_core_map]
+  ldw    r0,     r0[r11]             /* Translate to the RTOS core ID into r0 */
+  bu _yield_continue                 /* Skip the ulPortYieldRequired check and jump right to */
+                                     /* the context save and switch. Also skips saving SPC */
+                                     /* since the kcall handler has already saved it. */
+
 .align 64
 kcall:
   /* start saving the thread's context */
   extsp RTOS_SUPPORT_INTERRUPT_STACK_GROWTH
-  stw    r10,    sp[18]
+  stw    r1,     sp[9]
   stw    r11,    sp[19]
 
   /* kcall sets SPC to the instruction of the kcall rather than the next instruction */
   /* so we need to adjust the SPC value that we save to the stack: */
   stw    spc,    sp[1]   /* save the saved program counter onto the stack... */
-  ldw    r10,    sp[1]   /* so that we can load it into r10 (which we have already saved). */
-  add    r10, r10, 4     /* Add 4 to the spc to make it point to the instruction after the kcall */
- {stw    r10,    sp[1]   /* Now save it to the stack */
+  ldw    r1,     sp[1]   /* so that we can load it into r1 (which we have already saved). */
+  add    r1,     r1,   4 /* Add 4 to the spc to make it point to the instruction after the kcall. */
+ {stw    r1,     sp[1]   /* Now save it to the stack. */
 
-  /* KCALLs use the same common function as interrupt callbacks. */
-  /* we want it to call pxKernelCallHandler as the root function. */
-  ldap   r11,    pxKernelCallHandler}
- {mov    r10,     r11
+  /* kcall uses the same common function as interrupt callbacks. */
+  /* tell it to call _yield above. */
+  ldap   r11,    _yield}
+  mov    r1,     r11
 
-  /* jump into _freertos_interrupt_callback_common but just past */
-  /* the instruction that saves the SPC since it was saved above */
-  bu _freertos_kcall_save_ctx_continue}
+  /* fall into rtos_interrupt_callback_common */
 
 .globl rtos_interrupt_callback_common
 rtos_interrupt_callback_common:
   /* This is the body of the RTOS _xcore_c_interrupt_callback_XXX functions. */
-  /* r10 = interrupt_callback_t function */
+  /* r1 = interrupt_callback_t function */
 
   /* Save the thread's context onto the thread's stack. */
   /* The stack was extended for this by the wrapper function. */
+  /* Begin only by saving some registers. The rest will be saved */
+  /* later if vTaskSwitchContext() needs to be called. */
+  /* LR needs to be saved because it is clobbered when calling the callback. */
+  /* r0-r3, and r11 need to be saved because the callback may clobber them. */
+  /* r4 is saved because it is used here to hold the task SP. */
+
+  stw    lr,     sp[7]
+  stw    r0,     sp[8]
+/*stw    r1,     sp[9]      already saved by the wrapper function. */
+  stw    r2,     sp[10]
+  stw    r3,     sp[11]
+ {stw    r4,     sp[12]
+/*stw    r11,    sp[19]     already saved by the wrapper function. */
+
+  ldaw   r4,     sp[0]}  /* Get value of current stackpointer into r4. */
+
+ {kentsp 0               /* switch to the kernel stack. */
+                         /* The value 0 is safe to use since we don't need the SP */
+                         /* that it saves to KSP[0]. We already have it in r4. */
+
+  get    r11,    ed}     /* Get the event data... */
+ {mov    r0,     r11     /* into the first argument for the callback function... */
+  bla    r1}             /* and call the callback function. */
+
+ {set    sp,     r4      /* Restore the task's SP now. */
+ 
+  get    r11,    id}                           /* Get the logical core ID into r11. */
+  ldaw   r0,     dp[rtos_core_map]
+  ldw    r0,     r0[r11]                       /* Translate to the RTOS core ID into r0. */
+  ldaw   r2,     dp[ulPortYieldRequired]       /* Get the yield required array into r2. */
+  ldw    r1,     r2[r0]                        /* Is a yield required for this core? */
+ {bf     r1,     _freertos_restore_ctx_partial /* If not, restore the context now. */
+  ldc    r1,     0}
+  stw    r1,     r2[r0]                        /* Otherwise, clear the yield required flag. */
+
+  /* Save the rest of the current task's context. */
   stw    spc,    sp[1]
-_freertos_kcall_save_ctx_continue:
+_yield_continue:
   stw    ssr,    sp[2]
   stw    sed,    sp[3]
   stw    et,     sp[4]
   stw    dp,     sp[5]
   stw    cp,     sp[6]
-  stw    lr,     sp[7]
-  stw    r0,     sp[8]
-  stw    r1,     sp[9]
-  stw    r2,     sp[10]
-  stw    r3,     sp[11]
-  stw    r4,     sp[12]
   stw    r5,     sp[13]
   stw    r6,     sp[14]
   stw    r7,     sp[15]
   stw    r8,     sp[16]
- {stw    r9,     sp[17]
-/*stw    r10,    sp[18]     already saved by the wrapper function. */
-/*stw    r11,    sp[19]     already saved by the wrapper function. */
+  stw    r9,     sp[17]
+  stw    r10,    sp[18]
 
+  ldaw   r5,     dp[pxCurrentTCBs] /* Get the current TCB array into r5. */
+  ldw    r1,     r5[r0]            /* Get this core's current TCB pointer into r1. */
+  stw    r4,     r1[0x0]           /* Save the current task's SP to the first */
+                                   /* word (top of stack) in the current TCB. */
 
-  get    r11,    id}     /* Get the logical core ID into R11 */
-  ldaw   r0,     dp[rtos_core_map]
-  ldw    r5,     r0[r11] /* Translate the logical core ID into the RTOS core ID */
-  ldaw   r4,     dp[pxCurrentTCBs]
- {ldw    r0,     r4[r5]  /* get this core's current TCB pointer into r0 */
+ {kentsp 0                         /* switch back to the kernel stack. */
 
-  ldaw   r1,     sp[0]}  /* Get value of current stackpointer... */
-  stw    r1,     r0[0x0] /* and save it to the first word (top of stack) in the current TCB */
+  mov    r6,     r0}               /* copy the RTOS core ID into r6 so we don't lose it. */
+  ldap   r11,    vTaskSwitchContext
+  bla    r11             /* Finally call vTaskSwitchContext(core_id) now that the task's */
+                         /* entire context is saved. Note the core id in r0 is the argument. */
 
- {kentsp 0               /* switch to the kernel stack. */
-                         /* The value 0 is safe to use since we don't need the SP */
-                         /* saved to KSP[0] as it will be saved by the callback. */
-
-  get    r11,    ed}     /* Get the event data... */
- {mov    r0,     r11     /* into the first argument for the callback function... */
-  bla    r10}            /* and call the callback function. */
-
-  ldap   r11,    vPortSwitchContext
-  bla    r11
-
-//krestsp 0              /* actually unnecessary since KSP is already set and the SP */
+//krestsp 0              /* unnecessary since KSP is already set and the SP */
                          /* is being restored next from the current TCB. */
 
 .globl _freertos_restore_ctx
 _freertos_restore_ctx:
 
-  ldw    r0,     r4[r5]  /* get this core's current TCB pointer into r0 */
+  ldw    r0,     r5[r6]  /* get this core's current TCB pointer into r0 */
   ldw    r0,     r0[0x0] /* Get the top of the stack from the current TCB... */
   set    sp,     r0;     /* into the stack pointer register. */
 
@@ -103,18 +136,19 @@ _freertos_restore_ctx:
   ldw    et,     sp[4]
   ldw    dp,     sp[5]
   ldw    cp,     sp[6]
-  ldw    lr,     sp[7]
-  ldw    r0,     sp[8]
-  ldw    r1,     sp[9]
-  ldw    r2,     sp[10]
-  ldw    r3,     sp[11]
-  ldw    r4,     sp[12]
   ldw    r5,     sp[13]
   ldw    r6,     sp[14]
   ldw    r7,     sp[15]
   ldw    r8,     sp[16]
   ldw    r9,     sp[17]
   ldw    r10,    sp[18]
+_freertos_restore_ctx_partial:
+  ldw    lr,     sp[7]
+  ldw    r0,     sp[8]
+  ldw    r1,     sp[9]
+  ldw    r2,     sp[10]
+  ldw    r3,     sp[11]
+  ldw    r4,     sp[12]
  {ldw    r11,    sp[19]
 
   /* shrink the stack by the size of the context just restored */
