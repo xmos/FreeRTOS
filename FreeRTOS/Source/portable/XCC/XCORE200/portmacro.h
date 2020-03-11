@@ -1,4 +1,4 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2020, XMOS Ltd, All rights reserved
 
 #ifndef PORTMACRO_H
 #define PORTMACRO_H
@@ -50,6 +50,12 @@ typedef uint32_t UBaseType_t;
 #ifdef configNUM_CORES
 #warning configNUM_CORES should not be defined when using the single core XCORE port
 #undef configNUM_CORES
+#endif
+
+/* This may be set to zero in the config file if the rtos_time
+functions are not needed or if it is incremented elsewhere. */
+#ifndef configUPDATE_RTOS_TIME_FROM_TICK_ISR
+#define configUPDATE_RTOS_TIME_FROM_TICK_ISR 1
 #endif
 
 /*

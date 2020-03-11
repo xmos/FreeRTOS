@@ -11,24 +11,6 @@ uint32_t ulPortYieldRequired = pdFALSE;
 
 /*-----------------------------------------------------------*/
 
-__attribute__((fptrgroup("rtos_isr")))
-void pxKernelCallHandler( uint32_t ulData )
-{
-//	debug_printf( "In KCALL: %u\n", ulData );
-	ulPortYieldRequired = pdTRUE;
-}
-/*-----------------------------------------------------------*/
-
-void vPortSwitchContext( void )
-{
-	if( ulPortYieldRequired == pdTRUE )
-	{
-		ulPortYieldRequired = pdFALSE;
-        vTaskSwitchContext();
-	}
-}
-/*-----------------------------------------------------------*/
-
 /***** TODO: These should be added to lib_xcore_c *****/
 static void _hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
 {
@@ -45,17 +27,16 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR, pvData )
 {
 	uint32_t ulNow;
 
-	/* must call hwtimer_get_time to clear the interrupt */
-	hwtimer_get_time( xKernelTimer, &ulNow );
-	/* but we want the next interrupt to be scheduled
-	 * relative to the previous interrupt time, not the
-	 * current time which is some random amount of time
-	 * later. */
+	/* Need the next interrupt to be scheduled relative to
+	 * the current trigger time, rather than the current
+	 * time. */
 	hwtimer_get_trigger_time( xKernelTimer, &ulNow );
 	ulNow += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
 	hwtimer_change_trigger_time( xKernelTimer, ulNow );
 
-	//	debug_printf("KISR from %d\n", xCoreID);
+#if configUPDATE_RTOS_TIME_FROM_TICK_ISR == 1
+	rtos_time_increment( RTOS_TICK_PERIOD( configTICK_RATE_HZ ) );
+#endif
 
 	if( xTaskIncrementTick() != pdFALSE )
 	{
@@ -66,7 +47,6 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR, pvData )
 
 static void prvCoreInit( void )
 {
-
 	rtos_core_register();
 	asm volatile (
 			"ldap r11, kexcept\n\t"
@@ -89,7 +69,7 @@ static void prvCoreInit( void )
 }
 /*-----------------------------------------------------------*/
 
-DEFINE_RTOS_INTERRUPT_PERMITTED( void, vPortStartSchedulerOnCore, void )
+DEFINE_RTOS_KERNEL_ENTRY( void, vPortStartSchedulerOnCore, void )
 {
 	prvCoreInit();
 
@@ -184,7 +164,7 @@ BaseType_t xPortStartScheduler( void )
 {
 	rtos_locks_initialize();
 	hwtimer_alloc( &xKernelTimer );
-	RTOS_INTERRUPT_PERMITTED(vPortStartSchedulerOnCore)();
+	RTOS_KERNEL_ENTRY(vPortStartSchedulerOnCore)();
 
 	return pdPASS;
 }
