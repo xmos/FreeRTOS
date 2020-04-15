@@ -380,7 +380,7 @@ static void prvInitialiseNewTimer(	const char * const pcTimerName,			/*lint !e97
 }
 /*-----------------------------------------------------------*/
 
-BaseType_t xTimerGenericCommandFromTask( TimerHandle_t xTimer, const BaseType_t xCommandID, const TickType_t xOptionalValue, BaseType_t * const pxHigherPriorityTaskWoken, const TickType_t xTicksToWait )
+BaseType_t xTimerGenericCommand( TimerHandle_t xTimer, const BaseType_t xCommandID, const TickType_t xOptionalValue, BaseType_t * const pxHigherPriorityTaskWoken, const TickType_t xTicksToWait )
 {
 BaseType_t xReturn = pdFAIL;
 DaemonTaskMessage_t xMessage;
@@ -395,8 +395,6 @@ DaemonTaskMessage_t xMessage;
 		xMessage.xMessageID = xCommandID;
 		xMessage.u.xTimerParameters.xMessageValue = xOptionalValue;
 		xMessage.u.xTimerParameters.pxTimer = xTimer;
-
-		configASSERT( xCommandID < tmrFIRST_FROM_ISR_COMMAND );
 
 		if( xCommandID < tmrFIRST_FROM_ISR_COMMAND )
 		{
@@ -409,37 +407,7 @@ DaemonTaskMessage_t xMessage;
 				xReturn = xQueueSendToBack( xTimerQueue, &xMessage, tmrNO_DELAY );
 			}
 		}
-
-		traceTIMER_COMMAND_SEND( xTimer, xCommandID, xOptionalValue, xReturn );
-	}
-	else
-	{
-		mtCOVERAGE_TEST_MARKER();
-	}
-
-	return xReturn;
-}
-/*-----------------------------------------------------------*/
-
-BaseType_t xTimerGenericCommandFromISR( TimerHandle_t xTimer, const BaseType_t xCommandID, const TickType_t xOptionalValue, BaseType_t * const pxHigherPriorityTaskWoken, const TickType_t xTicksToWait )
-{
-BaseType_t xReturn = pdFAIL;
-DaemonTaskMessage_t xMessage;
-
-	configASSERT( xTimer );
-
-	/* Send a message to the timer service task to perform a particular action
-	on a particular timer definition. */
-	if( xTimerQueue != NULL )
-	{
-		/* Send a command to the timer service task to start the xTimer timer. */
-		xMessage.xMessageID = xCommandID;
-		xMessage.u.xTimerParameters.xMessageValue = xOptionalValue;
-		xMessage.u.xTimerParameters.pxTimer = xTimer;
-
-		configASSERT( xCommandID >= tmrFIRST_FROM_ISR_COMMAND );
-
-		if( xCommandID >= tmrFIRST_FROM_ISR_COMMAND )
+		else
 		{
 			xReturn = xQueueSendToBackFromISR( xTimerQueue, &xMessage, pxHigherPriorityTaskWoken );
 		}

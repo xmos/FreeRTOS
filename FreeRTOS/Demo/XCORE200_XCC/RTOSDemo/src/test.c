@@ -34,6 +34,7 @@
 #include "StreamBufferInterrupt.h"
 #include "TaskNotify.h"
 #include "TimerDemo.h"
+#include "TimerDemoISR.h"
 #include "regtest.h"
 
 void vParTestInitialiseXCORE( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan );
@@ -176,6 +177,7 @@ int c_main( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan
 			#endif
 
 			#if( testingmainENABLE_TIMER_DEMO_TASKS == 1 )
+				vInitialiseTimerISRForTimerDemo();
 				vStartTimerDemoTask( mainTIMER_DEMO_TASK_FREQ );
 			#endif
 
@@ -609,12 +611,6 @@ void vApplicationTickHook( void )
 		#if( testingmainENABLE_QUEUE_SET_POLLING_TASKS == 1 )
 			/* Use queue sets from interrupts. */
 			vQueueSetPollingInterruptAccess();
-		#endif
-
-		#if( testingmainENABLE_TIMER_DEMO_TASKS == 1 )
-			/* The full demo includes a software timer demo/test that requires
-			prodding periodically from the tick interrupt. */
-			vTimerPeriodicISRTests();
 		#endif
 
 		#if( testingmainENABLE_TASK_NOTIFY_TASKS == 1 )

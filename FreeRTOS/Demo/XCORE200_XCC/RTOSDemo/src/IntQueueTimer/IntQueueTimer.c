@@ -20,9 +20,9 @@ static xcore_c_error_t hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
 
 DEFINE_RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR, pvData )
 {
-	hwtimer_t xTimer = ( hwtimer_t ) pvData;
-	uint32_t ulNow;
-	int xYieldRequired;
+hwtimer_t xTimer = ( hwtimer_t ) pvData;
+uint32_t ulNow;
+int xYieldRequired;
 
 	hwtimer_get_time( xTimer, &ulNow );
 	hwtimer_get_trigger_time( xTimer, &ulNow );

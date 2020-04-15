@@ -78,7 +78,7 @@ void vParTestInitialiseXCORE( int tile, chanend xTile0Chan, chanend xTile1Chan, 
 	}
 	else
 	{
-		chan_in_word(xTile0Chan, &c_read);
+		chan_in_word(xTile0Chan, ( uint32_t * ) &c_read);
 		chanend_alloc(&c_write);
 	}
 
