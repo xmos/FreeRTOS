@@ -25,14 +25,24 @@ static xcore_c_error_t hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
 
 DEFINE_RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR, pvData )
 {
+	uint32_t ulLastTrigger;
 	uint32_t ulNow;
 
 	/* Need the next interrupt to be scheduled relative to
 	 * the current trigger time, rather than the current
 	 * time. */
-	hwtimer_get_trigger_time( xKernelTimer, &ulNow );
-	ulNow += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
-	hwtimer_change_trigger_time( xKernelTimer, ulNow );
+	hwtimer_get_trigger_time( xKernelTimer, &ulLastTrigger );
+
+	/* Check to see if the ISR is late. If it is, we don't
+	 * want to schedule the next interrupt to be in the past. */
+	hwtimer_get_time( xKernelTimer, &ulNow );
+	if( ulNow - ulLastTrigger >= configCPU_CLOCK_HZ / configTICK_RATE_HZ )
+	{
+		ulLastTrigger = ulNow;
+	}
+
+	ulLastTrigger += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
+	hwtimer_change_trigger_time( xKernelTimer, ulLastTrigger );
 
 #if configUPDATE_RTOS_TIME_FROM_TICK_ISR == 1
 	rtos_time_increment( RTOS_TICK_PERIOD( configTICK_RATE_HZ ) );
