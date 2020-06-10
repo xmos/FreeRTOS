@@ -63,11 +63,11 @@ prvAutoReloadTimerCallback() callback function, and use the ID of the
 pxExpiredTimer parameter passed into that function to know which counter to
 increment.  The other timers all have their own unique callback function and
 simply increment their counters without using the callback function parameter. */
-static portTIMER_CALLBACK_FUNCTION_PROTO( prvAutoReloadTimerCallback, pxExpiredTimer );
-static portTIMER_CALLBACK_FUNCTION_PROTO( prvOneShotTimerCallback, pxExpiredTimer );
+static void prvAutoReloadTimerCallback( TimerHandle_t pxExpiredTimer );
+static void prvOneShotTimerCallback( TimerHandle_t pxExpiredTimer );
 static void prvTimerTestTask( void *pvParameters );
-static portTIMER_CALLBACK_FUNCTION_PROTO( prvISRAutoReloadTimerCallback, pxExpiredTimer );
-static portTIMER_CALLBACK_FUNCTION_PROTO( prvISROneShotTimerCallback, pxExpiredTimer );
+static void prvISRAutoReloadTimerCallback( TimerHandle_t pxExpiredTimer );
+static void prvISROneShotTimerCallback( TimerHandle_t pxExpiredTimer );
 
 /* The test functions used by the timer test task.  These manipulate the auto
 reload and one-shot timers in various ways, then delay, then inspect the timers
@@ -1017,7 +1017,8 @@ static TickType_t uxTick = ( TickType_t ) -1;
 /*-----------------------------------------------------------*/
 
 /*** Timer callback functions are defined below here. ***/
-static portTIMER_CALLBACK_FUNCTION( prvAutoReloadTimerCallback, pxExpiredTimer )
+
+static void prvAutoReloadTimerCallback( TimerHandle_t pxExpiredTimer )
 {
 size_t uxTimerID;
 
@@ -1035,7 +1036,7 @@ size_t uxTimerID;
 }
 /*-----------------------------------------------------------*/
 
-static portTIMER_CALLBACK_FUNCTION( prvOneShotTimerCallback, pxExpiredTimer )
+static void prvOneShotTimerCallback( TimerHandle_t pxExpiredTimer )
 {
 /* A count is kept of the number of times this callback function is executed.
 The count is stored as the timer's ID.  This is only done to test the
@@ -1058,7 +1059,7 @@ size_t uxLastCallCount;
 }
 /*-----------------------------------------------------------*/
 
-static portTIMER_CALLBACK_FUNCTION( prvISRAutoReloadTimerCallback, pxExpiredTimer )
+static void prvISRAutoReloadTimerCallback( TimerHandle_t pxExpiredTimer )
 {
 	/* The parameter is not used in this case as only one timer uses this
 	callback function. */
@@ -1068,7 +1069,7 @@ static portTIMER_CALLBACK_FUNCTION( prvISRAutoReloadTimerCallback, pxExpiredTime
 }
 /*-----------------------------------------------------------*/
 
-static portTIMER_CALLBACK_FUNCTION( prvISROneShotTimerCallback, pxExpiredTimer )
+static void prvISROneShotTimerCallback( TimerHandle_t pxExpiredTimer )
 {
 	/* The parameter is not used in this case as only one timer uses this
 	callback function. */

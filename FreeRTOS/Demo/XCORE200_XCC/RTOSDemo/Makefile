@@ -28,10 +28,9 @@ EXCLUDE_FILES += ../../../Source/portable/MemMang/heap_1.c  \
                  ../../Common/Minimal/MessageBufferAMP.c    \
                  ../../Common/Minimal/sp_flop.c             \
                  ../../Common/Minimal/StaticAllocation.c
-                 
-                 
 
-XCC_FLAGS = -O2 -g -report -fxscope
+
+XCC_FLAGS = -O2 -g -report -fxscope -Wno-xcore-fptrgroup
 
 USED_MODULES = lib_rtos_support  lib_trycatch  lib_xassert  lib_xcore_c
 
