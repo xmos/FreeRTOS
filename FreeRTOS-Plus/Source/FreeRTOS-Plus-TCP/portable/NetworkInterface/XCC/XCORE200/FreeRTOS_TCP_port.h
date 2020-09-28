@@ -3,6 +3,19 @@
 #ifndef FREERTOS_TCP_PORT_H_
 #define FREERTOS_TCP_PORT_H_
 
+#ifndef ipconfigUSE_ETHERNET
+#define ipconfigUSE_ETHERNET 0
+#endif
+
+#ifndef ipconfigUSE_WIFI
+#define ipconfigUSE_WIFI 0
+#endif
+
+#if !((ipconfigUSE_ETHERNET != 0) ^ (ipconfigUSE_WIFI != 0))
+#define ipconfigUSE_WIFI 1 /* Only doing this for syntax highlighting */
+#error Exactly one of either ipconfigUSE_ETHERNET or ipconfigUSE_WIFI must be defined true when using FreeRTOS Plus TCP
+#endif
+
 #if ipconfigUSE_ETHERNET
 
 #include "soc.h"

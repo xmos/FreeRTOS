@@ -1,22 +1,15 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 #include "FreeRTOS.h"
 #include "task.h"
+
+#include <xcore/hwtimer.h>
+#include <xcore/triggerable.h>
 
 #include "IntQueue.h"
 
 static hwtimer_t xIntQueueTimer0;
 static hwtimer_t xIntQueueTimer1;
-
-static void _hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	asm volatile("getd %0, res[%1]" : "=r" (*time): "r" (t));
-}
-
-static xcore_c_error_t hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	RETURN_EXCEPTION_OR_ERROR( _hwtimer_get_trigger_time( t, time ) );
-}
 
 DEFINE_RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR, pvData )
 {
@@ -24,8 +17,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR, pvData )
 	uint32_t ulNow;
 	int xYieldRequired;
 
-	hwtimer_get_time( xTimer, &ulNow );
-	hwtimer_get_trigger_time( xTimer, &ulNow );
+	ulNow = hwtimer_get_time( xTimer );
+    ulNow = hwtimer_get_trigger_time( xTimer );
 
 	if ( xTimer == xIntQueueTimer0 )
 	{
@@ -47,16 +40,18 @@ void vInitialiseTimerForIntQueueTest( void )
 {
 uint32_t ulNow;
 
-	hwtimer_alloc( &xIntQueueTimer0 );
-	hwtimer_get_time( xIntQueueTimer0, &ulNow );
+	xIntQueueTimer0 = hwtimer_alloc();
+	ulNow = hwtimer_get_time( xIntQueueTimer0 );
 	ulNow += configCPU_CLOCK_HZ / 100;
-	hwtimer_setup_interrupt_callback( xIntQueueTimer0, ulNow, ( void * ) xIntQueueTimer0, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
-	hwtimer_enable_trigger( xIntQueueTimer0 );
+	triggerable_setup_interrupt_callback( xIntQueueTimer0, ( void * ) xIntQueueTimer0, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
+	hwtimer_set_trigger_time( xIntQueueTimer0, ulNow );
+	triggerable_enable_trigger( xIntQueueTimer0 );
 
-	hwtimer_alloc( &xIntQueueTimer1 );
-	hwtimer_get_time( xIntQueueTimer1, &ulNow );
+	xIntQueueTimer1 = hwtimer_alloc();
+	ulNow = hwtimer_get_time( xIntQueueTimer1 );
 	ulNow += configCPU_CLOCK_HZ / 150;
-	hwtimer_setup_interrupt_callback( xIntQueueTimer1, ulNow, ( void * ) xIntQueueTimer1, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
-	hwtimer_enable_trigger( xIntQueueTimer1 );
+	triggerable_setup_interrupt_callback( xIntQueueTimer1, ( void * ) xIntQueueTimer1, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
+	hwtimer_set_trigger_time( xIntQueueTimer1, ulNow );
+	triggerable_enable_trigger( xIntQueueTimer1 );
 }
 

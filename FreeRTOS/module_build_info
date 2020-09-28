@@ -1,18 +1,17 @@
 VERSION = 10.3.0
 
-DEPENDENT_MODULES = lib_rtos_support(>=0.5.0)  \
-                    lib_xcore_c(>=2.0.0)
+DEPENDENT_MODULES = lib_rtos_support(>=0.5.0)
 
 MODULE_XCC_FLAGS = $(XCC_FLAGS) -Os
 
 EXPORT_INCLUDE_DIRS = Source/include                \
-                      Source/portable/XCC/XCORE200
+                      $(XCC_PORT_ROOT)
 
 INCLUDE_DIRS = $(EXPORT_INCLUDE_DIRS)
 
 SOURCE_DIRS = Source                        \
               Source/portable/MemMang       \
-              Source/portable/XCC/XCORE200
+              $(XCC_PORT_ROOT)
 
 # Only use heap_4.c.
 # TODO: There should be a way to specify which heap implementation

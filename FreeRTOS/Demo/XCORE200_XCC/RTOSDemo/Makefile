@@ -33,7 +33,7 @@ EXCLUDE_FILES += ../../../Source/portable/MemMang/heap_1.c  \
 
 XCC_FLAGS = -O2 -g -report -fxscope
 
-USED_MODULES = lib_rtos_support  lib_trycatch  lib_xassert  lib_xcore_c
+USED_MODULES = lib_rtos_support  lib_trycatch  lib_xassert
 
 VERBOSE = 0
 

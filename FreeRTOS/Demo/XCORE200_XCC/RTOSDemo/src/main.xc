@@ -1,9 +1,8 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 #include <platform.h>
 
 #include "rtos_printf.h"
-#include "xcore_c.h"
 #include "testing_main.h"
 
 extern "C" {

@@ -4,6 +4,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include <xs1.h>
+#include <xcore/hwtimer.h>
+#include <xcore/triggerable.h>
 
 static hwtimer_t xKernelTimer;
 
@@ -11,28 +13,26 @@ uint32_t ulPortYieldRequired = pdFALSE;
 
 /*-----------------------------------------------------------*/
 
-/***** TODO: These should be added to lib_xcore_c *****/
-static void _hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	asm volatile("getd %0, res[%1]" : "=r" (*time): "r" (t));
-}
-
-static xcore_c_error_t hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	RETURN_EXCEPTION_OR_ERROR( _hwtimer_get_trigger_time( t, time ) );
-}
-/******************************************************/
-
 DEFINE_RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR, pvData )
 {
+	uint32_t ulLastTrigger;
 	uint32_t ulNow;
 
 	/* Need the next interrupt to be scheduled relative to
 	 * the current trigger time, rather than the current
 	 * time. */
-	hwtimer_get_trigger_time( xKernelTimer, &ulNow );
-	ulNow += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
-	hwtimer_change_trigger_time( xKernelTimer, ulNow );
+	ulLastTrigger = hwtimer_get_trigger_time( xKernelTimer );
+
+	/* Check to see if the ISR is late. If it is, we don't
+	 * want to schedule the next interrupt to be in the past. */
+	ulNow = hwtimer_get_time( xKernelTimer );
+	if( ulNow - ulLastTrigger >= configCPU_CLOCK_HZ / configTICK_RATE_HZ )
+	{
+		ulLastTrigger = ulNow;
+	}
+
+	ulLastTrigger += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
+	hwtimer_change_trigger_time( xKernelTimer, ulLastTrigger );
 
 #if configUPDATE_RTOS_TIME_FROM_TICK_ISR == 1
 	rtos_time_increment( RTOS_TICK_PERIOD( configTICK_RATE_HZ ) );
@@ -59,13 +59,14 @@ static void prvCoreInit( void )
 	rtos_irq_enable( 1 );
 
 	uint32_t ulNow;
-	hwtimer_get_time( xKernelTimer, &ulNow );
+	ulNow = hwtimer_get_time( xKernelTimer );
 //	debug_printf( "The time is now (%u)\n", ulNow );
 
 	ulNow += configCPU_CLOCK_HZ / configTICK_RATE_HZ;
 
-	hwtimer_setup_interrupt_callback( xKernelTimer, ulNow, NULL, RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR ) );
-	hwtimer_enable_trigger( xKernelTimer );
+	triggerable_setup_interrupt_callback( xKernelTimer, NULL, RTOS_INTERRUPT_CALLBACK( pxKernelTimerISR ) );
+	hwtimer_set_trigger_time( xKernelTimer, ulNow );
+	triggerable_enable_trigger( xKernelTimer );
 }
 /*-----------------------------------------------------------*/
 
@@ -129,7 +130,8 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 	 * upon kernel entry.
 	 */
 	pxTopOfStack[ 1 ] = ( StackType_t ) pxCode;       /* SP[1]  := SPC */
-	pxTopOfStack[ 2 ] = (1<<9) | XS1_SR_IEBLE_MASK;   /* SP[2]  := SSR */
+    pxTopOfStack[ 2 ] = XS1_SR_IEBLE_MASK
+                      | XS1_SR_KEDI_MASK;             /* SP[2]  := SSR */
 	pxTopOfStack[ 3 ] = 0x00000000;                   /* SP[3]  := SED */
 	pxTopOfStack[ 4 ] = 0x00000000;                   /* SP[4]  := ET */
 	pxTopOfStack[ 5 ] = dp;                           /* SP[5]  := DP */
@@ -163,7 +165,7 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 BaseType_t xPortStartScheduler( void )
 {
 	rtos_locks_initialize();
-	hwtimer_alloc( &xKernelTimer );
+	xKernelTimer = hwtimer_alloc();
 	RTOS_KERNEL_ENTRY(vPortStartSchedulerOnCore)();
 
 	return pdPASS;
