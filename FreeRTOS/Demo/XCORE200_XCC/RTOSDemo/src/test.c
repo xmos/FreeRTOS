@@ -1,9 +1,10 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 #include <stdlib.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include <xcore/chanend.h>
 
 #include "limits.h"
 #include "testing_main.h"
@@ -36,7 +37,7 @@
 #include "TimerDemo.h"
 #include "regtest.h"
 
-void vParTestInitialiseXCORE( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan );
+void vParTestInitialiseXCORE( int tile, chanend_t xTile0Chan, chanend_t xTile1Chan, chanend_t xTile2Chan, chanend_t xTile3Chan );
 #define vParTestInitialise vParTestInitialiseXCORE
 
 /* Flag for errors occuring locally */
@@ -66,10 +67,10 @@ void vApplicationIdleHook( void );
  */
 static uint32_t prvCheckTasks( int tile, uint32_t ulErrorFound );
 
-static void prvSetupHardware( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan );
+static void prvSetupHardware( int tile, chanend_t xTile0Chan, chanend_t xTile1Chan, chanend_t xTile2Chan, chanend_t xTile3Chan );
 
 
-int c_main( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan )
+int c_main( int tile, chanend_t xTile0Chan, chanend_t xTile1Chan, chanend_t xTile2Chan, chanend_t xTile3Chan )
 {
 	prvSetupHardware( tile, xTile0Chan, xTile1Chan, xTile2Chan, xTile3Chan );
 
@@ -260,7 +261,7 @@ int i = 0;
 /*-----------------------------------------------------------*/
 
 /* Setup any hardware specific to tests here */
-static void prvSetupHardware( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan )
+static void prvSetupHardware( int tile, chanend_t xTile0Chan, chanend_t xTile1Chan, chanend_t xTile2Chan, chanend_t xTile3Chan )
 {
 	vParTestInitialise( tile, xTile0Chan, xTile1Chan, xTile2Chan, xTile3Chan );
 }

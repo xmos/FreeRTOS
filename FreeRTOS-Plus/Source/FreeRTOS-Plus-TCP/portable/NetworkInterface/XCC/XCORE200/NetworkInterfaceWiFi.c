@@ -59,10 +59,6 @@ NetworkBufferDescriptor_t *pxPacketBuffer_to_NetworkBuffer( const void *pvBuffer
  * When using Amazon FreeRTOS this should be "iot_wifi.h".
  */
 
-#if ipconfigZERO_COPY_TX_DRIVER != 0
-#error The xcore wifi TCP/IP driver does not support TX zero copy
-#endif
-
 #define PRINT_MAC_ADDR( A ) rtos_printf("%x:%x:%x:%x:%x:%x\n", A[0], A[1], A[2], A[3], A[4], A[5])
 
 void sl_wfx_host_received_frame_callback(sl_wfx_received_ind_t *rx_buffer)
@@ -156,12 +152,11 @@ WIFIDeviceMode_t mode;
 
         /* WiFi is not yet connected to an AP */
 
-        if( sl_wfx_context == NULL || sl_wfx_event_group == NULL)
+        while( sl_wfx_context == NULL || sl_wfx_event_group == NULL)
         {
             /* sl_wfx_init() has not yet set the context or created the
-            event group so we cannot wait here yet.
-            The IP task will wait a bit and call this again. */
-            return pdFAIL;
+            event group. Wait a bit and check again. */
+            vTaskDelay(pdMS_TO_TICKS(100));
         }
 
         /* The WFX200 has not yet completed initialization.
@@ -183,7 +178,7 @@ WIFIDeviceMode_t mode;
                 return pdFAIL;
             }
 
-            if( ( sl_wfx_context->state & SL_WFX_STA_INTERFACE_CONNECTED ) == 0 )
+            if( WIFI_IsConnected() == pdFALSE )
             {
                 BaseType_t xMAC_addr_init;
                 sl_wfx_mac_address_t unsetMAC = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
@@ -338,10 +333,17 @@ WIFIDeviceMode_t mode;
         WIFI_ReleaseLock();
     }
 
+#if ipconfigZERO_COPY_TX_DRIVER == 0
     if( xReleaseAfterSend != pdFALSE )
     {
         vReleaseNetworkBufferAndDescriptor( pxNetworkBuffer );
     }
+#else
+	xassert(xReleaseAfterSend);
+	/*
+	 * The DMA ISR will free the buffer
+	 */
+#endif
 
     return pdTRUE;
 }

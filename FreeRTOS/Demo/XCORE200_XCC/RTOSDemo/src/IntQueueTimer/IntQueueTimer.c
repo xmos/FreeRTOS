@@ -1,19 +1,12 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include <xcore/hwtimer.h>
+#include <xcore/triggerable.h>
+
 #include "IntQueue.h"
-
-static void _hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	asm volatile("getd %0, res[%1]" : "=r" (*time): "r" (t));
-}
-
-static xcore_c_error_t hwtimer_get_trigger_time( hwtimer_t t, uint32_t *time )
-{
-	RETURN_EXCEPTION_OR_ERROR( _hwtimer_get_trigger_time( t, time ) );
-}
 
 DEFINE_RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR, pvData )
 {
@@ -22,8 +15,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR, pvData )
 	uint32_t ulNow;
 	int xYieldRequired = pdFALSE;
 
-	hwtimer_get_time( xTimer, &ulNow );
-	hwtimer_get_trigger_time( xTimer, &ulNow );
+	ulNow = hwtimer_get_time( xTimer );
+    ulNow = hwtimer_get_trigger_time( xTimer );
 	ulNow += configCPU_CLOCK_HZ / 50;
 
 	if( ++xCount0 == 2 )
@@ -64,11 +57,13 @@ hwtimer_t xIntQueueTimer;
 	 */
 	ulState = portDISABLE_INTERRUPTS();
 	{
-		hwtimer_alloc( &xIntQueueTimer );
-		hwtimer_get_time( xIntQueueTimer, &ulNow );
+		xIntQueueTimer = hwtimer_alloc();
+		ulNow = hwtimer_get_time( xIntQueueTimer );
 		ulNow += configCPU_CLOCK_HZ / 50;
-		hwtimer_setup_interrupt_callback( xIntQueueTimer, ulNow, ( void * ) xIntQueueTimer, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
-		hwtimer_enable_trigger( xIntQueueTimer );
+	    triggerable_setup_interrupt_callback( xIntQueueTimer, ( void * ) xIntQueueTimer, RTOS_INTERRUPT_CALLBACK( pxIntQueueTimerISR ) );
+	    hwtimer_set_trigger_time( xIntQueueTimer, ulNow );
+	    triggerable_enable_trigger( xIntQueueTimer );
 	}
 	portRESTORE_INTERRUPTS( ulState );
 }
+

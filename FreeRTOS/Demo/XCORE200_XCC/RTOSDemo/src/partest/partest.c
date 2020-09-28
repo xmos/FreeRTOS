@@ -1,16 +1,18 @@
-// Copyright (c) 2019, XMOS Ltd, All rights reserved
+// Copyright (c) 2019-2020, XMOS Ltd, All rights reserved
 
 /* Scheduler include files. */
 #include "FreeRTOS.h"
 #include "portable.h"
+#include <xcore/chanend.h>
+#include <xcore/triggerable.h>
 
 /* Demo application include files. */
 #include "partest.h"
 
 void led_driver(uint16_t led_value);
 
-static chanend c_write;
-static chanend c_read;
+static chanend_t c_write;
+static chanend_t c_read;
 static int this_tile;
 static uint16_t led_bitmap = 0xFFFF;
 
@@ -38,8 +40,8 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxLEDUpdateISR, pvData )
 	(void) pvData;
 
 	//debug_printf("led isr\n");
-	xCmd.raw = _s_chan_in_word( c_read );
-	_s_chan_check_ct_end( c_read );
+	xCmd.raw = chanend_in_word( c_read );
+	chanend_check_end_token( c_read );
 
 	//debug_printf("Received LED update from tile %x\n", xCmd.tile);
 
@@ -62,24 +64,24 @@ DEFINE_RTOS_INTERRUPT_CALLBACK( pxLEDUpdateISR, pvData )
 
 /* ParTest contains FreeRTOS standard parallel port IO routines. */
 
-void vParTestInitialiseXCORE( int tile, chanend xTile0Chan, chanend xTile1Chan, chanend xTile2Chan, chanend xTile3Chan )
+void vParTestInitialiseXCORE( int tile, chanend_t xTile0Chan, chanend_t xTile1Chan, chanend_t xTile2Chan, chanend_t xTile3Chan )
 {
 	this_tile = tile;
 
 	if( tile == 0 )
 	{
-		chanend_alloc(&c_read);
-		chan_out_word(xTile1Chan, c_read);
+		c_read = chanend_alloc();
+		chanend_out_word(xTile1Chan, c_read);
 
-		chanend_alloc(&c_write);
+		c_write = chanend_alloc();
 
-		chanend_setup_interrupt_callback( c_read, NULL, RTOS_INTERRUPT_CALLBACK( pxLEDUpdateISR ) );
-		chanend_enable_trigger( c_read );
+		triggerable_setup_interrupt_callback( c_read, NULL, RTOS_INTERRUPT_CALLBACK( pxLEDUpdateISR ) );
+		triggerable_enable_trigger( c_read );
 	}
 	else
 	{
-		chan_in_word(xTile0Chan, &c_read);
-		chanend_alloc(&c_write);
+		c_read = chanend_in_word(xTile0Chan);
+		c_write = chanend_alloc();
 	}
 
 	chanend_set_dest(c_write, c_read);
@@ -100,8 +102,8 @@ void vParTestSetLED( UBaseType_t uxLED, BaseType_t xValue )
 	xCmd.tile = this_tile;
 
 	ulState = portDISABLE_INTERRUPTS();
-	_s_chan_out_word( c_write, xCmd.raw );
-	_s_chan_out_ct_end( c_write );
+	chanend_out_word( c_write, xCmd.raw );
+	chanend_out_end_token( c_write );
 	portRESTORE_INTERRUPTS(ulState);
 }
 
