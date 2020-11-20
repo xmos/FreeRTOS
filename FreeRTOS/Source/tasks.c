@@ -885,7 +885,7 @@ TaskRunning_t xTaskRunState;
 				{
 					listGET_OWNER_OF_NEXT_ENTRY( pxTCB, &( pxReadyTasksLists[ uxCurrentPriority ] ) );
 
-					//debug_printf("Attempting to schedule %s on core %d\n", pxTCB->pcTaskName, portGET_CORE_ID() );
+					debug_printf("Attempting to schedule %s on core %d\n", pxTCB->pcTaskName, portGET_CORE_ID() );
 
 					#if ( ( configRUN_MULTIPLE_PRIORITIES == 0 ) && ( configNUM_CORES > 1 ) )
 					{
@@ -906,7 +906,7 @@ TaskRunning_t xTaskRunState;
 					if( pxTCB->xTaskRunState == taskTASK_NOT_RUNNING )
 					{
 						/* If the task is not being executed by any core swap it in */
-						//debug_printf("Current priority %d: swap out %s(%d) for %s(%d) on core %d\n", uxCurrentPriority, pxCurrentTCBs[ portGET_CORE_ID() ]->pcTaskName, pxCurrentTCBs[ portGET_CORE_ID() ]->uxPriority, pxTCB->pcTaskName, pxTCB->uxPriority, portGET_CORE_ID());
+						debug_printf("Current priority %d: swap out %s(%d) for %s(%d) on core %d\n", uxCurrentPriority, pxCurrentTCBs[ portGET_CORE_ID() ]->pcTaskName, pxCurrentTCBs[ portGET_CORE_ID() ]->uxPriority, pxTCB->pcTaskName, pxTCB->uxPriority, portGET_CORE_ID());
 						pxCurrentTCBs[ xCoreID ]->xTaskRunState = taskTASK_NOT_RUNNING;
 						pxTCB->xTaskRunState = ( TaskRunning_t ) xCoreID;
                         pxCurrentTCBs[ xCoreID ] = pxTCB;
@@ -915,7 +915,7 @@ TaskRunning_t xTaskRunState;
 					else if( pxTCB == pxCurrentTCBs[ xCoreID ] )
 					{
 						configASSERT( ( pxTCB->xTaskRunState == xCoreID) || ( pxTCB->xTaskRunState == taskTASK_YIELDING ) );
-						//debug_printf("Keeping %s(%d) on core %d\n", pxTCB->pcTaskName, pxTCB->uxPriority, portGET_CORE_ID());
+						debug_printf("Keeping %s(%d) on core %d\n", pxTCB->pcTaskName, pxTCB->uxPriority, portGET_CORE_ID());
 
 						/* The task is already running on this core, mark it as scheduled */
 						pxTCB->xTaskRunState = ( TaskRunning_t ) xCoreID;
@@ -1496,8 +1496,6 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 	updated. */
 	taskENTER_CRITICAL();
 	{
-		//debug_printf("Adding task %s to ready list on core %d.\n", pxNewTCB->pcTaskName, xCoreID);
-
 		uxCurrentNumberOfTasks++;
 
 		if( xSchedulerRunning == pdFALSE )
@@ -1552,6 +1550,8 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 					pxNewTCB->xTaskRunState = xCoreID;
 					pxCurrentTCBs[ xCoreID ] = pxNewTCB;
 				}
+
+				debug_printf("Adding task %s to ready list on core %d.\n", pxNewTCB->pcTaskName, xCoreID);
 			}
 			else
 			{
@@ -1641,7 +1641,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 			no longer running. */
 			if( xTaskRunningOnCore != taskTASK_NOT_RUNNING )
 			{
-				//debug_printf("Task %s is running on core %d and is now marked for deletion.\n", pxTCB->pcTaskName, xTaskRunningOnCore );
+				debug_printf("Task %s is running on core %d and is now marked for deletion.\n", pxTCB->pcTaskName, xTaskRunningOnCore );
 
 				/* A running task is being deleted.  This cannot complete within the
 				task itself, as a context switch to another task is required.
@@ -1668,7 +1668,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 			}
 			else
 			{
-				//debug_printf("Task %s is not running and will now be deleted.\n", pxTCB->pcTaskName );
+				debug_printf("Task %s is not running and will now be deleted.\n", pxTCB->pcTaskName );
 				--uxCurrentNumberOfTasks;
 				traceTASK_DELETE( pxTCB );
 				prvDeleteTCB( pxTCB );
@@ -1685,7 +1685,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 
 				xCoreID = portGET_CORE_ID();
 
-				//debug_printf("Task deleted, yield core %d.\n", xTaskRunningOnCore );
+				debug_printf("Task deleted, yield core %d.\n", xTaskRunningOnCore );
 
 				if( xTaskRunningOnCore == xCoreID )
 				{
@@ -2213,7 +2213,7 @@ static void prvAddNewTaskToReadyList( TCB_t *pxNewTCB )
 			{
 				if( xSchedulerRunning != pdFALSE )
 				{
-					//debug_printf("Yield Core %d for task %s\n", xTaskRunningOnCore, pxTCB->pcTaskName );
+					debug_printf("Yield Core %d for task %s\n", xTaskRunningOnCore, pxTCB->pcTaskName );
 					if( xTaskRunningOnCore == portGET_CORE_ID() )
 					{
 						/* The current task has just been suspended. */

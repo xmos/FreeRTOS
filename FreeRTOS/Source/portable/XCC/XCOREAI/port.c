@@ -124,6 +124,14 @@ DEFINE_RTOS_KERNEL_ENTRY( void, vPortStartSchedulerOnCore, void )
 
 	xCoreID = prvCoreInit();
 
+	#if( configUSE_CORE_INIT_HOOK == 1 )
+	{
+		extern void vApplicationCoreInitHook( BaseType_t xCoreID );
+
+		vApplicationCoreInitHook( xCoreID );
+	}
+	#endif
+
 	debug_printf( "FreeRTOS Core %d initialized\n", xCoreID );
 
 	/*
